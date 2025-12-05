@@ -1,58 +1,127 @@
-## **Gradient Descent (Optimisation IA)**
-
-**Théorie** : Algorithme qui **descend la pente** d'une fonction pour trouver le minimum (ex: coût d'un modèle ML). Base de TOUS les apprentissages ! 
-
-## Code ultra-simple (6 lignes)
-
-```python
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Fonction coût : y = x² (minimum à x=0)
-def cost(x): return x**2
+# ============================================================
+# 1. Descente de gradient sur une fonction de coût simple 1D
+#    J(a) = (a - 3)^2  (fonction convexe, minimum global en a = 3)
+# ============================================================
 
-# Gradient descent
-x = 10  # point de départ
-learning_rate = 0.1
-history = [x]
+def cost(a):
+    """Fonction de coût J(a)."""
+    return (a - 3) ** 2
 
-for i in range(50):
-    grad = 2*x  # dérivée
-    x -= learning_rate * grad  # descente
-    history.append(x)
+def grad_cost(a):
+    """Gradient de J(a) par rapport à a : J'(a) = 2(a - 3)."""
+    return 2 * (a - 3)
 
-print("✅ Minimum trouvé:", x)  # ≈ 0.0
-```
+# paramètres de la descente
+learning_rate = 0.1   # taux d'apprentissage (η)
+n_iterations = 20      # nombre d'itérations
+a = 8.0                # point de départ (a0)
 
-## Visualisation bluffante
+a_history = [a]
+cost_history = [cost(a)]
 
-```python
-x_range = np.linspace(-11, 11, 100)
-plt.plot(x_range, cost(x_range), 'b-', label='Coût y=x²')
-plt.plot(history, cost(np.array(history)), 'ro-', label='Descente')
-plt.legend()
+for i in range(n_iterations):
+    g = grad_cost(a)              # calcul du gradient en a
+    a = a - learning_rate * g     # mise à jour : a_{t+1} = a_t - η * grad J
+    a_history.append(a)
+    cost_history.append(cost(a))
+
+print("=== Descente de gradient 1D ===")
+print(f"Valeur finale de a ≈ {a:.4f}")
+print(f"Coût final J(a) ≈ {cost(a):.4f}")
+
+# --- Visualisation de la trajectoire sur la fonction de coût ---
+a_vals = np.linspace(-1, 10, 200)
+J_vals = cost(a_vals)
+
+plt.figure()
+plt.plot(a_vals, J_vals, label="J(a)")
+plt.scatter(a_history, cost_history, marker='o')
+for i, (ai, Ji) in enumerate(zip(a_history, cost_history)):
+    plt.annotate(str(i), (ai, Ji))  # numéro d'itération
+plt.title("Descente de gradient sur J(a) = (a - 3)^2")
+plt.xlabel("a")
+plt.ylabel("J(a)")
+plt.grid(True)
 plt.show()
-```
 
-**Résultat** : **La courbe montre le chemin** du point qui glisse vers le minimum !
-
-## Démo avec tes données Word2Vec
-
-```python
-# Optimiser hyperparamètres (ex: learning rate)
-costs = []
-for lr in [0.01, 0.1, 0.5]:
-    x = 10
-    for i in range(20): x -= lr * 2*x
-    costs.append(cost(x))
-print("Meilleur learning rate:", np.argmin(costs))
-```
-
-**Parfait** : montre **comment TOUTES les IA apprennent** mathématiquement ! 
-
-**Installation** : rien (numpy/matplotlib déjà installés)
+# --- Visualisation de la diminution du coût au cours des itérations ---
+plt.figure()
+plt.plot(range(len(cost_history)), cost_history, marker='o')
+plt.title("Évolution du coût au cours des itérations")
+plt.xlabel("Itération")
+plt.ylabel("J(a)")
+plt.grid(True)
+plt.show()
 
 
-```python
+# ============================================================
+# 2. Descente de gradient pour une régression linéaire
+#    Modèle : y_hat = w*x + b
+#    Fonction de coût : MSE = 1/n * Σ (y_hat - y)^2
+# ============================================================
 
-```
+# Génération de données synthétiques (simule les "valeurs réelles")
+np.random.seed(0)
+n = 100
+X = 2 * np.random.rand(n, 1)          # variable explicative
+true_w = 4.0
+true_b = 1.0
+y = true_w * X + true_b + np.random.randn(n, 1) * 0.5  # cible avec bruit
+
+# Initialisation des paramètres du modèle
+w = 0.0
+b = 0.0
+learning_rate = 0.1
+n_iterations = 1000
+
+mse_history = []
+
+for i in range(n_iterations):
+    # Prédictions du modèle
+    y_hat = w * X + b
+
+    # Erreurs
+    errors = y_hat - y
+
+    # Fonction de coût : MSE
+    mse = (errors ** 2).mean()
+    mse_history.append(mse)
+
+    # Gradients de la MSE par rapport à w et b
+    # dJ/dw = 2/n * Σ (y_hat - y) * x
+    # dJ/db = 2/n * Σ (y_hat - y)
+    dw = 2 * (errors * X).mean()
+    db = 2 * errors.mean()
+
+    # Mise à jour des paramètres (descente du gradient)
+    w = w - learning_rate * dw
+    b = b - learning_rate * db
+
+print("\n=== Régression linéaire par descente de gradient ===")
+print(f"w appris ≈ {w:.4f} (vrai w = {true_w})")
+print(f"b appris ≈ {b:.4f} (vrai b = {true_b})")
+
+# --- Visualisation des données + droite apprise ---
+plt.figure()
+plt.scatter(X, y, label="Données réelles")
+x_line = np.linspace(0, 2, 100).reshape(-1, 1)
+y_line = w * x_line + b
+plt.plot(x_line, y_line, label="Modèle appris", linewidth=2)
+plt.title("Régression linéaire optimisée par descente de gradient")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# --- Visualisation de la MSE au cours des itérations ---
+plt.figure()
+plt.plot(range(len(mse_history)), mse_history)
+plt.title("Évolution de la MSE au cours des itérations")
+plt.xlabel("Itération")
+plt.ylabel("MSE")
+plt.grid(True)
+plt.show()
